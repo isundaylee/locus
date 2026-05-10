@@ -13,11 +13,14 @@ docker compose up --build
 # open http://localhost:3000
 ```
 
-The compose file runs Postgres alongside the app, bind-mounts source for hot reload, and persists DB data in a named volume. The app container uses **pnpm** (activated via Corepack from the `packageManager` field in `package.json`); `pnpm install` runs on each container start into an anonymous `node_modules` volume. No host install needed.
+The stack has four services:
 
-`DATABASE_URL=postgresql://locus:locus@db:5432/locus` is wired in for you.
+- `db` — Postgres 17.
+- `install` — one-shot; runs `pnpm install` into a shared `node_modules` named volume.
+- `migrate` — one-shot; runs `pnpm db:migrate` against `db`.
+- `app` — long-running; waits on `install`, `migrate`, and a healthy `db` (`depends_on … service_completed_successfully` / `service_healthy`) before starting `next dev`.
 
-The first `pnpm install` will create `pnpm-lock.yaml` (via the bind mount); commit it. `pnpm.supportedArchitectures` in `package.json` ensures the lockfile contains native binaries for every platform we care about (linux/darwin × x64/arm64 × glibc/musl), so the same lockfile is valid in both dev and CI.
+pnpm is activated via Corepack from the `packageManager` field in `package.json`. `pnpm.supportedArchitectures` ensures the lockfile carries native binaries for every platform we care about (linux/darwin × x64/arm64 × glibc/musl), so the same lockfile is valid in both the local dev container and the GHA build. `DATABASE_URL=postgresql://locus:locus@db:5432/locus` is wired in for you.
 
 To run an ad-hoc command (e.g. linting, drizzle-kit) inside the *running* container, use `exec` so it reuses the populated `node_modules` volume:
 

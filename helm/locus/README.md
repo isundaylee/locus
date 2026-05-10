@@ -33,7 +33,7 @@ The chart includes a Helm `pre-install`/`pre-upgrade` Job (`<release>-migrate-<r
 
 If the Job fails (bad migration), the release is rolled back and the previous app pods keep serving. The failed Job is left around for `kubectl logs <job>`.
 
-The app also calls `schemaReady()` lazily on first DB use, as a dev-mode fallback when no Job runs (e.g. `docker compose`). In prod that's a no-op since the Job ran first.
+Dev mirrors this: `docker-compose.yml` defines `install` and `migrate` as one-shot services that the `app` service waits on via `depends_on … service_completed_successfully`. There is no in-app migration fallback — app code assumes the schema is current.
 
 ## Extra manifests (SealedSecrets etc.)
 
