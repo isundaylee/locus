@@ -1,0 +1,15 @@
+apiVersion: v2
+name: locus
+description: Helm chart for Locus — personal day tracker
+type: application
+version: 0.1.0
+appVersion: "latest"
+maintainers:
+  - name: isundaylee
+home: https://github.com/isundaylee/locus
+sources:
+  - https://github.com/isundaylee/locus
+keywords:
+  - locus
+  - calendar
+  - tax

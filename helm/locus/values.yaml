@@ -1,0 +1,84 @@
+# Default values for locus.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/isundaylee/locus
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  annotations: {}
+
+ingress:
+  enabled: false
+  className: traefik
+  annotations: {}
+  hosts:
+    - host: locus.example.com
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+
+# Database connection. Locus reads DATABASE_URL from this secret. The secret
+# is expected to already exist in the namespace — typically the one created
+# by a CloudNativePG `Cluster` (`<cluster>-app`), which has a `uri` key.
+database:
+  secretName: ""
+  uriKey: uri
+
+probes:
+  readiness:
+    httpGet:
+      path: /api/days?from=2000-01-01&to=2000-01-01
+      port: http
+    initialDelaySeconds: 3
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  liveness:
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+
+# Container security context
+containerSecurityContext: {}
+
+# Additional labels and annotations applied to all resources
+labels: {}
+annotations: {}
+
+# Extra environment variables. Supports valueFrom references.
+env: []
+  # - name: SOMETHING_ELSE
+  #   value: "value"
+
+# Extra manifests rendered as-is (e.g. SealedSecrets). Each entry is a
+# string and runs through `tpl` so you can use Helm templating inside.
+extraManifests: []
+  # - |
+  #   apiVersion: bitnami.com/v1alpha1
+  #   kind: SealedSecret
+  #   metadata:
+  #     name: {{ .Release.Name }}-secret
+  #     namespace: {{ .Release.Namespace }}
+  #   spec:
+  #     encryptedData:
+  #       SOMETHING: AgB...

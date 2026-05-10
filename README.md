@@ -32,7 +32,7 @@ docker build -t <your-registry>/locus:<tag> .
 docker push <your-registry>/locus:<tag>
 ```
 
-Deployment to the homelab is via a Helm chart (TBD — not in this repo yet).
+Homelab deployment uses the Helm chart at `helm/locus/` — see [`helm/locus/README.md`](helm/locus/README.md). It targets Kubernetes with a CloudNativePG Cluster providing Postgres.
 
 ## Notes
 
