@@ -15,6 +15,13 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm run build
 
+# Bundle the migration script into a self-contained file. Next.js standalone
+# only carries packages its server.js graph imports; the out-of-band migrate
+# runner doesn't share that graph, so we inline its deps here.
+RUN pnpm exec esbuild scripts/migrate.mjs \
+    --bundle --platform=node --target=node22 --format=cjs \
+    --outfile=scripts/migrate.bundle.cjs
+
 # ---------- runner ----------
 FROM node:22-alpine AS runner
 WORKDIR /app
@@ -31,8 +38,8 @@ COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
 # Migration SQL — not traced by Next.js standalone, copy explicitly.
 COPY --from=build --chown=nextjs:nodejs /app/drizzle ./drizzle
-# Standalone migration runner for the Helm pre-upgrade Job.
-COPY --from=build --chown=nextjs:nodejs /app/scripts/migrate.mjs ./scripts/migrate.mjs
+# Self-contained migration runner for the Helm pre-upgrade Job (esbuild bundle).
+COPY --from=build --chown=nextjs:nodejs /app/scripts/migrate.bundle.cjs ./scripts/migrate.bundle.cjs
 
 USER nextjs
 
