@@ -27,9 +27,13 @@ helm install locus ./helm/locus \
 
 Or pin everything in a `values.local.yaml` and `helm upgrade --install locus ./helm/locus -f values.local.yaml`.
 
-## Schema bootstrap
+## Migrations
 
-Locus creates its table on first DB connection (idempotent `CREATE TABLE IF NOT EXISTS`). No migration job is needed.
+The chart includes a Helm `pre-install`/`pre-upgrade` Job (`<release>-migrate-<revision>`) that runs `node scripts/migrate.mjs` against the DB before any app pod rolls. This makes it safe to scale `replicaCount` past 1 — a single Job is the sole migration writer per release, and the app pods only ever see an already-migrated schema. The migrator is idempotent (drizzle tracks applied migrations in `__drizzle_migrations`), so re-runs are no-ops.
+
+If the Job fails (bad migration), the release is rolled back and the previous app pods keep serving. The failed Job is left around for `kubectl logs <job>`.
+
+The app also calls `schemaReady()` lazily on first DB use, as a dev-mode fallback when no Job runs (e.g. `docker compose`). In prod that's a no-op since the Job ran first.
 
 ## Extra manifests (SealedSecrets etc.)
 

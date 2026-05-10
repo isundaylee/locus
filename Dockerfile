@@ -31,6 +31,8 @@ COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
 # Migration SQL — not traced by Next.js standalone, copy explicitly.
 COPY --from=build --chown=nextjs:nodejs /app/drizzle ./drizzle
+# Standalone migration runner for the Helm pre-upgrade Job.
+COPY --from=build --chown=nextjs:nodejs /app/scripts/migrate.mjs ./scripts/migrate.mjs
 
 USER nextjs
 
