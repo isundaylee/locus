@@ -1,4 +1,5 @@
-import { bigint, pgTable, text } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { bigint, check, pgTable, text } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 export const STATUSES = ["working", "out_of_office"] as const;
@@ -11,13 +12,23 @@ export const statusSchema = z.enum(STATUSES);
 export const locationSchema = z.enum(LOCATIONS);
 export const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "expected YYYY-MM-DD");
 
-export const dayEntries = pgTable("day_entries", {
-  date: text("date").primaryKey(),
-  status: text("status", { enum: STATUSES }).notNull(),
-  location: text("location", { enum: LOCATIONS }),
-  note: text("note"),
-  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
-});
+export const dayEntries = pgTable(
+  "day_entries",
+  {
+    date: text("date").primaryKey(),
+    status: text("status", { enum: STATUSES }).notNull(),
+    location: text("location", { enum: LOCATIONS }),
+    note: text("note"),
+    updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (table) => [
+    check("status_valid", sql`${table.status} IN ('working', 'out_of_office')`),
+    check(
+      "location_valid",
+      sql`${table.location} IS NULL OR ${table.location} IN ('CA', 'NY', 'other')`,
+    ),
+  ],
+);
 
 export type DayEntry = typeof dayEntries.$inferSelect;
 

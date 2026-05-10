@@ -1,5 +1,7 @@
 import { drizzle } from "drizzle-orm/postgres-js";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
+import { join } from "node:path";
 import * as schema from "./schema";
 
 type Sql = ReturnType<typeof postgres>;
@@ -10,6 +12,9 @@ const globalForDb = globalThis as unknown as {
   _db?: DB;
   _schemaReady?: Promise<void>;
 };
+
+const MIGRATIONS_FOLDER =
+  process.env.DRIZZLE_MIGRATIONS_FOLDER ?? join(process.cwd(), "drizzle");
 
 function getSql(): Sql {
   if (globalForDb._sql) return globalForDb._sql;
@@ -34,21 +39,21 @@ export function getDb(): DB {
 
 export function schemaReady(): Promise<void> {
   if (globalForDb._schemaReady) return globalForDb._schemaReady;
-  const sql = getSql();
   globalForDb._schemaReady = (async () => {
-    await sql`
-      CREATE TABLE IF NOT EXISTS day_entries (
-        date        text PRIMARY KEY,
-        status      text NOT NULL CHECK (status IN ('working', 'out_of_office')),
-        location    text CHECK (location IS NULL OR location IN ('CA', 'NY', 'other')),
-        note        text,
-        updated_at  bigint NOT NULL
-      )
-    `;
-    await sql`CREATE INDEX IF NOT EXISTS idx_day_entries_date ON day_entries(date)`;
+    // Use a dedicated single-connection client for migrations, per the
+    // drizzle recommendation.
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error("DATABASE_URL is required");
+    const migrationClient = postgres(url, { max: 1 });
+    try {
+      await migrate(drizzle(migrationClient), {
+        migrationsFolder: MIGRATIONS_FOLDER,
+      });
+    } finally {
+      await migrationClient.end();
+    }
   })().catch((e) => {
-    console.error("schema init failed:", e);
-    // Reset so the next caller retries instead of being stuck on a poisoned promise.
+    console.error("migration failed:", e);
     globalForDb._schemaReady = undefined;
     throw e;
   });
