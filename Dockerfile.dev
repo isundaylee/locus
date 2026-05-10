@@ -12,5 +12,6 @@ EXPOSE 3000
 
 # package.json is bind-mounted at runtime. Run `pnpm install` on every
 # start so a changed package.json or new lockfile is picked up; pnpm is
-# a fast no-op when node_modules is already in sync.
-CMD ["sh", "-c", "pnpm install && pnpm run dev -- --hostname 0.0.0.0"]
+# a fast no-op when node_modules is already in sync. Call `next dev`
+# via `pnpm exec` to avoid pnpm's `--` arg forwarding quirks.
+CMD ["sh", "-c", "pnpm install && pnpm exec next dev --hostname 0.0.0.0"]
