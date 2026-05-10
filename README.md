@@ -19,11 +19,14 @@ The compose file runs Postgres alongside the app, bind-mounts source for hot rel
 
 The first `pnpm install` will create `pnpm-lock.yaml` (via the bind mount); commit it. `pnpm.supportedArchitectures` in `package.json` ensures the lockfile contains native binaries for every platform we care about (linux/darwin × x64/arm64 × glibc/musl), so the same lockfile is valid in both dev and CI.
 
-To run an ad-hoc command (e.g. linting) inside the container:
+To run an ad-hoc command (e.g. linting, drizzle-kit) inside the *running* container, use `exec` so it reuses the populated `node_modules` volume:
 
 ```bash
-docker compose run --rm app pnpm run lint
+docker compose exec app pnpm run lint
+docker compose exec app pnpm db:generate
 ```
+
+Use `docker compose run --rm app sh -c "pnpm install --frozen-lockfile && <cmd>"` if the stack isn't already up.
 
 ## Prod image
 
