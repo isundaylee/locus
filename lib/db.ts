@@ -1,43 +1,52 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
 
-const DATABASE_PATH = process.env.DATABASE_PATH ?? "./data/locus.db";
-
-function ensureSchema(conn: Database.Database) {
-  conn.exec(`
-    CREATE TABLE IF NOT EXISTS day_entries (
-      date        TEXT PRIMARY KEY,
-      status      TEXT NOT NULL CHECK (status IN ('working', 'out_of_office')),
-      location    TEXT CHECK (location IS NULL OR location IN ('CA', 'NY', 'other')),
-      note        TEXT,
-      updated_at  INTEGER NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_day_entries_date ON day_entries(date);
-  `);
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  throw new Error("DATABASE_URL is required");
 }
 
 const globalForDb = globalThis as unknown as {
-  sqlite?: Database.Database;
+  sql?: ReturnType<typeof postgres>;
+  ensured?: Promise<void>;
 };
 
-const sqlite =
-  globalForDb.sqlite ??
-  (() => {
-    mkdirSync(dirname(DATABASE_PATH), { recursive: true });
-    const conn = new Database(DATABASE_PATH);
-    conn.pragma("journal_mode = WAL");
-    conn.pragma("foreign_keys = ON");
-    ensureSchema(conn);
-    return conn;
-  })();
+const sql =
+  globalForDb.sql ??
+  postgres(DATABASE_URL, {
+    max: 5,
+    idle_timeout: 30,
+    prepare: false,
+  });
 
 if (process.env.NODE_ENV !== "production") {
-  globalForDb.sqlite = sqlite;
+  globalForDb.sql = sql;
 }
 
-export const db = drizzle(sqlite, { schema });
-export { sqlite };
+async function ensureSchema() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS day_entries (
+      date        text PRIMARY KEY,
+      status      text NOT NULL CHECK (status IN ('working', 'out_of_office')),
+      location    text CHECK (location IS NULL OR location IN ('CA', 'NY', 'other')),
+      note        text,
+      updated_at  bigint NOT NULL
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_day_entries_date ON day_entries(date)`;
+}
+
+export const schemaReady: Promise<void> =
+  globalForDb.ensured ??
+  ensureSchema().catch((e) => {
+    console.error("schema init failed:", e);
+    throw e;
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForDb.ensured = schemaReady;
+}
+
+export const db = drizzle(sql, { schema });
+export { sql };

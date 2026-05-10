@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { bigint, pgTable, text } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 export const STATUSES = ["working", "out_of_office"] as const;
@@ -11,12 +11,12 @@ export const statusSchema = z.enum(STATUSES);
 export const locationSchema = z.enum(LOCATIONS);
 export const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "expected YYYY-MM-DD");
 
-export const dayEntries = sqliteTable("day_entries", {
+export const dayEntries = pgTable("day_entries", {
   date: text("date").primaryKey(),
   status: text("status", { enum: STATUSES }).notNull(),
   location: text("location", { enum: LOCATIONS }),
   note: text("note"),
-  updatedAt: integer("updated_at").notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
 });
 
 export type DayEntry = typeof dayEntries.$inferSelect;

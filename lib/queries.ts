@@ -1,14 +1,14 @@
-import { and, gte, lte } from "drizzle-orm";
-import { db, sqlite } from "./db";
+import { and, gte, lte, sql as drizzleSql } from "drizzle-orm";
+import { db, schemaReady } from "./db";
 import { dayEntries, type DayEntry, type Location, type Status } from "./schema";
 import { expandRange } from "./dates";
 
-export function getRange(from: string, to: string): DayEntry[] {
+export async function getRange(from: string, to: string): Promise<DayEntry[]> {
+  await schemaReady;
   return db
     .select()
     .from(dayEntries)
-    .where(and(gte(dayEntries.date, from), lte(dayEntries.date, to)))
-    .all();
+    .where(and(gte(dayEntries.date, from), lte(dayEntries.date, to)));
 }
 
 export type UpsertInput = {
@@ -19,37 +19,40 @@ export type UpsertInput = {
   note: string | null;
 };
 
-export function upsertRange(input: UpsertInput): number {
+export async function upsertRange(input: UpsertInput): Promise<number> {
+  await schemaReady;
   const dates = expandRange(input.from, input.to);
+  if (dates.length === 0) return 0;
   const now = Date.now();
-  const tx = sqlite.transaction((rows: typeof dates) => {
-    const stmt = sqlite.prepare(
-      `INSERT INTO day_entries (date, status, location, note, updated_at)
-       VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT(date) DO UPDATE SET
-         status = excluded.status,
-         location = excluded.location,
-         note = excluded.note,
-         updated_at = excluded.updated_at`,
-    );
-    for (const d of rows) {
-      stmt.run(d, input.status, input.location, input.note, now);
-    }
-  });
-  tx(dates);
-  return dates.length;
+  const rows = dates.map((date) => ({
+    date,
+    status: input.status,
+    location: input.location,
+    note: input.note,
+    updatedAt: now,
+  }));
+
+  await db
+    .insert(dayEntries)
+    .values(rows)
+    .onConflictDoUpdate({
+      target: dayEntries.date,
+      set: {
+        status: drizzleSql`excluded.status`,
+        location: drizzleSql`excluded.location`,
+        note: drizzleSql`excluded.note`,
+        updatedAt: drizzleSql`excluded.updated_at`,
+      },
+    });
+
+  return rows.length;
 }
 
-export function deleteRange(from: string, to: string): number {
-  const dates = expandRange(from, to);
-  const tx = sqlite.transaction((rows: typeof dates) => {
-    const stmt = sqlite.prepare(`DELETE FROM day_entries WHERE date = ?`);
-    let n = 0;
-    for (const d of rows) {
-      const info = stmt.run(d);
-      n += info.changes;
-    }
-    return n;
-  });
-  return tx(dates) as unknown as number;
+export async function deleteRange(from: string, to: string): Promise<number> {
+  await schemaReady;
+  const result = await db
+    .delete(dayEntries)
+    .where(and(gte(dayEntries.date, from), lte(dayEntries.date, to)))
+    .returning({ date: dayEntries.date });
+  return result.length;
 }

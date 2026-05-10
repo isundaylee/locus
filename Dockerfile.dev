@@ -1,17 +1,15 @@
 # Dev image: hot-reload via `next dev`, source bind-mounted from host.
 FROM node:22-alpine
-RUN apk add --no-cache python3 make g++ libc6-compat
 WORKDIR /app
 
 ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
-ENV DATABASE_PATH=/data/locus.db
 
 EXPOSE 3000
-VOLUME ["/data"]
 
-# package.json is bind-mounted at runtime; install on first start
-# if node_modules is empty inside the (anonymous) volume.
-CMD ["sh", "-c", "mkdir -p /data && if [ ! -d node_modules/next ]; then npm install; fi && npm run dev -- --hostname 0.0.0.0"]
+# package.json is bind-mounted at runtime. Always run `npm install` so a
+# changed package.json is picked up automatically; npm is a no-op fast path
+# when node_modules is already in sync.
+CMD ["sh", "-c", "npm install && npm run dev -- --hostname 0.0.0.0"]

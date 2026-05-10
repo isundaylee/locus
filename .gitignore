@@ -4,7 +4,7 @@
 /node_modules
 /.npm-cache
 
-# local sqlite data
+# leftover sqlite db from earlier setup; postgres is in a named docker volume
 /data
 
 # claude code local settings

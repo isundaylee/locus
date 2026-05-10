@@ -4,7 +4,7 @@ Personal day tracker. Each day has a **status** (`working` / `out_of_office`) an
 
 ## Stack
 
-Next.js 16 (App Router) · TypeScript · SQLite (`better-sqlite3` + Drizzle) · TanStack Query · Radix Popover · Tailwind v4.
+Next.js 16 (App Router) · TypeScript · Postgres (`postgres` + Drizzle) · TanStack Query · Radix Popover · Tailwind v4.
 
 ## Dev (docker-compose)
 
@@ -13,7 +13,9 @@ docker compose up --build
 # open http://localhost:3000
 ```
 
-The compose file bind-mounts the source for hot reload and persists the SQLite file at `./data/locus.db`. On first run, `npm install` is executed inside the container's `node_modules` anonymous volume. No host install needed.
+The compose file runs Postgres alongside the app, bind-mounts source for hot reload, and persists DB data in a named volume. On first run, `npm install` is executed inside the container's `node_modules` anonymous volume. No host install needed.
+
+`DATABASE_URL=postgresql://locus:locus@db:5432/locus` is wired in for you.
 
 To run an ad-hoc command (e.g. linting) inside the container:
 
@@ -36,4 +38,3 @@ Deployment to the homelab is via a Helm chart (TBD — not in this repo yet).
 
 - Schema is created on first DB connection (idempotent `CREATE TABLE IF NOT EXISTS` in `lib/db.ts`). No separate migration step.
 - "Today" is computed in browser-local time. Stored dates are zone-less `YYYY-MM-DD` strings.
-- Single-replica is load-bearing — never run more than one pod against the same SQLite file, or it will corrupt.

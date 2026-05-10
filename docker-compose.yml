@@ -1,8 +1,27 @@
 services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: locus
+      POSTGRES_PASSWORD: locus
+      POSTGRES_DB: locus
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U locus"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   app:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "3000:3000"
     volumes:
@@ -10,8 +29,10 @@ services:
       # anonymous volume keeps container-installed node_modules from being
       # shadowed by the host directory
       - /app/node_modules
-      - ./data:/data
     environment:
-      DATABASE_PATH: /data/locus.db
+      DATABASE_URL: postgresql://locus:locus@db:5432/locus
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
+
+volumes:
+  db-data:

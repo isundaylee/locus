@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const rows = getRange(parsed.data.from, parsed.data.to);
+  const rows = await getRange(parsed.data.from, parsed.data.to);
   return NextResponse.json({ days: rows });
 }
 
@@ -24,7 +24,7 @@ export async function PUT(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const count = upsertRange({
+  const count = await upsertRange({
     from: parsed.data.from,
     to: parsed.data.to,
     status: parsed.data.status,
@@ -43,6 +43,6 @@ export async function DELETE(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const count = deleteRange(parsed.data.from, parsed.data.to);
+  const count = await deleteRange(parsed.data.from, parsed.data.to);
   return NextResponse.json({ deleted: count });
 }
