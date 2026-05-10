@@ -2,6 +2,13 @@
 
 # dependencies
 /node_modules
+/.npm-cache
+
+# local sqlite data
+/data
+
+# claude code local settings
+/.claude
 /.pnp
 .pnp.*
 .yarn/*

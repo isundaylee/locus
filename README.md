@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Locus
 
-## Getting Started
+Personal day tracker. Each day has a **status** (`working` / `out_of_office`) and a **location** (`CA` / `NY` / `other`), plus an optional note. Weekends render as out-of-office by default unless explicitly overridden. Built for tax-reporting use.
 
-First, run the development server:
+## Stack
+
+Next.js 16 (App Router) · TypeScript · SQLite (`better-sqlite3` + Drizzle) · TanStack Query · Radix Popover · Tailwind v4.
+
+## Dev (docker-compose)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up --build
+# open http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The compose file bind-mounts the source for hot reload and persists the SQLite file at `./data/locus.db`. On first run, `npm install` is executed inside the container's `node_modules` anonymous volume. No host install needed.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+To run an ad-hoc command (e.g. linting) inside the container:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+docker compose run --rm app npm run lint
+```
 
-## Learn More
+## Prod image
 
-To learn more about Next.js, take a look at the following resources:
+Build with the multi-stage `Dockerfile` (not `Dockerfile.dev`):
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+docker build -t <your-registry>/locus:<tag> .
+docker push <your-registry>/locus:<tag>
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Deployment to the homelab is via a Helm chart (TBD — not in this repo yet).
 
-## Deploy on Vercel
+## Notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Schema is created on first DB connection (idempotent `CREATE TABLE IF NOT EXISTS` in `lib/db.ts`). No separate migration step.
+- "Today" is computed in browser-local time. Stored dates are zone-less `YYYY-MM-DD` strings.
+- Single-replica is load-bearing — never run more than one pod against the same SQLite file, or it will corrupt.
