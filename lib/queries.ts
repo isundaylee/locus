@@ -1,11 +1,11 @@
 import { and, gte, lte, sql as drizzleSql } from "drizzle-orm";
-import { db, schemaReady } from "./db";
+import { getDb, schemaReady } from "./db";
 import { dayEntries, type DayEntry, type Location, type Status } from "./schema";
 import { expandRange } from "./dates";
 
 export async function getRange(from: string, to: string): Promise<DayEntry[]> {
-  await schemaReady;
-  return db
+  await schemaReady();
+  return getDb()
     .select()
     .from(dayEntries)
     .where(and(gte(dayEntries.date, from), lte(dayEntries.date, to)));
@@ -20,7 +20,7 @@ export type UpsertInput = {
 };
 
 export async function upsertRange(input: UpsertInput): Promise<number> {
-  await schemaReady;
+  await schemaReady();
   const dates = expandRange(input.from, input.to);
   if (dates.length === 0) return 0;
   const now = Date.now();
@@ -32,7 +32,7 @@ export async function upsertRange(input: UpsertInput): Promise<number> {
     updatedAt: now,
   }));
 
-  await db
+  await getDb()
     .insert(dayEntries)
     .values(rows)
     .onConflictDoUpdate({
@@ -49,8 +49,8 @@ export async function upsertRange(input: UpsertInput): Promise<number> {
 }
 
 export async function deleteRange(from: string, to: string): Promise<number> {
-  await schemaReady;
-  const result = await db
+  await schemaReady();
+  const result = await getDb()
     .delete(dayEntries)
     .where(and(gte(dayEntries.date, from), lte(dayEntries.date, to)))
     .returning({ date: dayEntries.date });
