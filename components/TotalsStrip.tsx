@@ -4,24 +4,10 @@ import { useMemo } from "react";
 import { deriveDay, expandRange, tallyDays } from "@/lib/dates";
 import type { DayEntry } from "@/lib/schema";
 
-function Stat({
-  label,
-  value,
-  muted = false,
-}: {
-  label: string;
-  value: number;
-  muted?: boolean;
-}) {
+function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex flex-col">
-      <span
-        className={
-          muted
-            ? "text-xs text-zinc-500"
-            : "text-xs font-medium text-zinc-600 dark:text-zinc-400"
-        }
-      >
+      <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
         {label}
       </span>
       <span className="text-2xl font-semibold tabular-nums">{value}</span>
@@ -53,7 +39,7 @@ export function TotalsStrip({
         {year} YTD {loading && "·"}
       </h2>
       <div className="flex flex-wrap items-stretch gap-6">
-        <div className="flex flex-1 gap-6">
+        <div className="flex gap-6">
           <Stat label="Working" value={totals.working} />
           <Stat label="OOO" value={totals.out_of_office} />
         </div>
@@ -61,17 +47,10 @@ export function TotalsStrip({
           aria-hidden
           className="w-px self-stretch bg-zinc-200 dark:bg-zinc-800"
         />
-        <div className="flex flex-1 gap-6">
+        <div className="flex gap-6">
           <Stat label="CA" value={totals.CA} />
           <Stat label="NY" value={totals.NY} />
           <Stat label="Other" value={totals.other} />
-        </div>
-        <div
-          aria-hidden
-          className="w-px self-stretch bg-zinc-200 dark:bg-zinc-800"
-        />
-        <div className="flex gap-6">
-          <Stat label="Unmarked" value={totals.unmarked} muted />
         </div>
       </div>
     </section>

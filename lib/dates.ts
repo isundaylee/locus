@@ -66,7 +66,7 @@ export function deriveDay(
   }
   return {
     date,
-    status: null,
+    status: "working",
     location: "CA",
     note: null,
     isDefault: true,
@@ -101,7 +101,6 @@ export type Totals = {
   CA: number;
   NY: number;
   other: number;
-  unmarked: number;
 };
 
 export function emptyTotals(): Totals {
@@ -111,7 +110,6 @@ export function emptyTotals(): Totals {
     CA: 0,
     NY: 0,
     other: 0,
-    unmarked: 0,
   };
 }
 
@@ -120,7 +118,6 @@ export function tallyDays(days: DerivedDay[]): Totals {
   for (const d of days) {
     if (d.status === "working") t.working += 1;
     else if (d.status === "out_of_office") t.out_of_office += 1;
-    else t.unmarked += 1;
     if (d.location === "CA") t.CA += 1;
     else if (d.location === "NY") t.NY += 1;
     else if (d.location === "other") t.other += 1;
