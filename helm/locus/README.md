@@ -5,7 +5,7 @@ Deploys the Locus app on Kubernetes. Single replica, single deployment, single s
 ## Prerequisites
 
 - A CloudNativePG `Cluster` already running in the same namespace. The chart consumes the `<cluster>-app` secret that CNPG generates — by default it reads the `uri` key as `DATABASE_URL`.
-- A container image for Locus published to a registry the cluster can pull from.
+- A container image for Locus published to a registry the cluster can pull from. The included `.github/workflows/docker-build.yml` builds and pushes to GHCR (`ghcr.io/<owner>/locus`) on every push to `main` and on `v*` tags. Make the GHCR package **public** in repo settings (Packages → locus → Visibility) so the cluster can pull without a pull secret.
 
 ## Required values
 
