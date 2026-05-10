@@ -19,8 +19,8 @@ RUN pnpm run build
 # only carries packages its server.js graph imports; the out-of-band migrate
 # runner doesn't share that graph, so we inline its deps here.
 RUN pnpm exec esbuild scripts/migrate.mjs \
-    --bundle --platform=node --target=node22 --format=cjs \
-    --outfile=scripts/migrate.bundle.cjs
+    --bundle --platform=node --target=node22 --format=esm \
+    --outfile=scripts/migrate.bundle.mjs
 
 # ---------- runner ----------
 FROM node:22-alpine AS runner
@@ -39,7 +39,7 @@ COPY --from=build --chown=nextjs:nodejs /app/public ./public
 # Migration SQL — not traced by Next.js standalone, copy explicitly.
 COPY --from=build --chown=nextjs:nodejs /app/drizzle ./drizzle
 # Self-contained migration runner for the Helm pre-upgrade Job (esbuild bundle).
-COPY --from=build --chown=nextjs:nodejs /app/scripts/migrate.bundle.cjs ./scripts/migrate.bundle.cjs
+COPY --from=build --chown=nextjs:nodejs /app/scripts/migrate.bundle.mjs ./scripts/migrate.bundle.mjs
 
 USER nextjs
 

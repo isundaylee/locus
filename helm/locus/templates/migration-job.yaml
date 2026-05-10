@@ -36,7 +36,7 @@ spec:
         - name: migrate
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["node", "scripts/migrate.bundle.cjs"]
+          command: ["node", "scripts/migrate.bundle.mjs"]
           env:
             - name: DATABASE_URL
               valueFrom:
