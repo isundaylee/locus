@@ -33,5 +33,13 @@
     "tailwindcss": "^4",
     "tsx": "^4.20.4",
     "typescript": "^5"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "pnpm": {
+    "supportedArchitectures": {
+      "os": ["linux", "darwin"],
+      "cpu": ["x64", "arm64"],
+      "libc": ["glibc", "musl"]
+    }
   }
 }

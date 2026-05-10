@@ -3,6 +3,7 @@
 # dependencies
 /node_modules
 /.npm-cache
+/.pnpm-store
 
 # leftover sqlite db from earlier setup; postgres is in a named docker volume
 /data

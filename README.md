@@ -13,14 +13,16 @@ docker compose up --build
 # open http://localhost:3000
 ```
 
-The compose file runs Postgres alongside the app, bind-mounts source for hot reload, and persists DB data in a named volume. On first run, `npm install` is executed inside the container's `node_modules` anonymous volume. No host install needed.
+The compose file runs Postgres alongside the app, bind-mounts source for hot reload, and persists DB data in a named volume. The app container uses **pnpm** (activated via Corepack from the `packageManager` field in `package.json`); `pnpm install` runs on each container start into an anonymous `node_modules` volume. No host install needed.
 
 `DATABASE_URL=postgresql://locus:locus@db:5432/locus` is wired in for you.
+
+The first `pnpm install` will create `pnpm-lock.yaml` (via the bind mount); commit it. `pnpm.supportedArchitectures` in `package.json` ensures the lockfile contains native binaries for every platform we care about (linux/darwin × x64/arm64 × glibc/musl), so the same lockfile is valid in both dev and CI.
 
 To run an ad-hoc command (e.g. linting) inside the container:
 
 ```bash
-docker compose run --rm app npm run lint
+docker compose run --rm app pnpm run lint
 ```
 
 ## Prod image

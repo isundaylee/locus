@@ -1,18 +1,19 @@
 # syntax=docker/dockerfile:1.7
 
-# ---------- deps ----------
-FROM node:22-alpine AS deps
-WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
-
 # ---------- build ----------
+# Single deps+build stage. Next.js standalone output is self-contained,
+# so we don't need to copy node_modules to the runner — which avoids
+# pnpm's symlinked node_modules layout breaking across stages.
 FROM node:22-alpine AS build
+RUN corepack enable
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+RUN pnpm run build
 
 # ---------- runner ----------
 FROM node:22-alpine AS runner
